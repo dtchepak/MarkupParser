@@ -11,7 +11,7 @@ namespace MarkupParser
         [Test]
         public void TextParsing()
         {
-            var result = Node.TextParser().Parse("hello world");
+            var result = Node.TextNodeParser().Parse("hello world");
 
             result.Remaining.ShouldBeEmpty();
             result.Value.ToString().ShouldBe("hello world");
@@ -20,31 +20,34 @@ namespace MarkupParser
         [Test]
         public void OrCombinatorWhenFirstParserSucceeds()
         {
-            var parser = Node.Int().Or(Node.TextParser());
+            var digitParser = Parser.Satisfies(char.IsDigit).AtLeastOne();
+            var alphaStringParser = Parser.Satisfies(char.IsLetter).AtLeastOne();
+            var parser = digitParser.Or(alphaStringParser);
             var result = parser.Parse("1hello");
 
             result.Remaining.ShouldBe("hello");
-            result.Value.ToString().ShouldBe(new IntNode(1).ToString());
+            result.Value.ShouldBe("1");
         }
 
         [Test]
         public void OrCombinatorWhenFirstParserFails()
         {
-            var parser = Node.Int().Or(Node.TextParser());
+            var digitParser = Parser.Satisfies(char.IsDigit).AtLeastOne();
+            var alphaStringParser = Parser.Satisfies(char.IsLetter).AtLeastOne();
+            var parser = digitParser.Or(alphaStringParser);
             var result = parser.Parse("hello");
 
             result.Remaining.ShouldBeEmpty();
-            result.Value.ToString().ShouldBe("hello");
+            result.Value.ShouldBe("hello");
         }
 
         [Test]
-        public void ListParser()
+        public void AtLeastOneParser()
         {
-            var parser = Node.Int().List();
+            var parser = Parser.Satisfies(char.IsDigit).AtLeastOne();
             var result = parser.Parse("123abc");
-
             result.Remaining.ShouldBe("abc");
-            result.Value.Select(x => ((IntNode) x).Value).ShouldBe(new[] {1,2,3});
+            result.Value.ShouldBe("123");
         }
 
         [Test]
@@ -59,96 +62,53 @@ namespace MarkupParser
         }
 
         [Test]
+        public void ParseAllCharacters()
+        {
+            const string text = "hello";
+            var parser = Parser.Char().Many();
+            var result = parser.Parse(text);
+            result.Value.ShouldBe("hello");
+        }
+
+        [Test]
+        public void Binding()
+        {
+            var result = Node.BindingParser().Parse("{binding}");
+            result.Value.ToString().ShouldBe("(BINDING: binding)");
+        }
+
+        [Test]
+        public void BindingAndText()
+        {
+            var parser = Node.BindingParser().Or(Node.TextNodeParser()).Many();
+            var result = parser.Parse("this {is} a test");
+            Node.ToString(result.Value).ShouldBe("this (BINDING: is) a test");
+            result.Value.Count().ShouldBe(3);
+        }
+
+        [Test]
+        public void Bold()
+        {
+            var result = Node.BoldParser().Parse("*hello*");
+            result.Value.ToString().ShouldBe("(BOLD: hello)");
+        }
+
+        [Test]
         public void BoldAndText()
         {
-            var text = "Hello *world*";
-            var result = Node.NodeParser().Parse(text);
-
-            result.Value.ToString().ShouldBe("asdf");
+            const string text = "Hello *world*";
+            var result = Node.NodeParser().Many().Parse(text);
+            Node.ToString(result.Value).ShouldBe("Hello (BOLD: world)");
         }
-    }
 
-    public abstract class Node
-    {
-        public static Parser<Node> TextParser()
+        [Test]
+        public void BoldAndTextAndBinding()
         {
-            return Parser.Satisfies(c => c != '*').List().Bind(s => Parser<Node>.Value(new TextNode(s)));
+            const string expected = "hello (BOLD: world and (BINDING: binding))!";
+
+            //var result = Node.NodeParser().Many().Parse("hello *world and {binding}*!");
+
+            //Node.ToString(result.Value).ShouldBe(expected);
         }
-
-        public static Parser<Node> Int()
-        {
-            return new Parser<Node>(s =>
-            {
-                if (!string.IsNullOrEmpty(s) && Char.IsDigit(s[0]))
-                {
-                    return Result(s.Substring(1), new IntNode(int.Parse(char.ToString(s[0]))));
-                }
-                return null;
-            });
-        }
-
-        public static Parser<Node> RootNodeParser()
-        {
-            //NOT RIGHT: return NodeParser().List().Bind(nodes => Parser<Node>.Value(new RootNode(nodes)));
-            return null;
-        }
-
-        public static Parser<Node> NodeParser()
-        {
-            return BoldParser().Or(TextParser());
-        }
-
-        public static Parser<Node> BoldParser()
-        {
-            var boldSymbolParser = Parser.Satisfies(c => c == '*');
-            return boldSymbolParser
-                .Bind(c => NodeParser().List()
-                    .Bind(nodes => boldSymbolParser
-                        .Bind(c2 => Parser<Node>.Value(new BoldNode(nodes))
-                        )
-                    )
-                );
-        }
-
-        private static ParseResult<Node> Result(string rest, Node node)
-        {
-            return new ParseResult<Node>(rest, node);
-        }
-
-    }
-    public class TextNode : Node
-    {
-        public TextNode(string text) { Text = text; }
-
-        public TextNode(IEnumerable<char> text) { Text = new String(text.ToArray()); }
-
-        public string Text { get; private set; }
-        public override string ToString() { return Text; }
-    }
-    public class IntNode : Node
-    {
-        public IntNode(int i) { Value = i; }
-        public int Value { get; private set; }
-        public override string ToString() { return "(INT: " + Value + ")"; }
-    }
-
-    public class RootNode : Node
-    {
-        public IEnumerable<Node> Nodes { get; private set; }
-        public RootNode(IEnumerable<Node> nodes) { Nodes = nodes; }
-        public override string ToString() { return "(ROOT: " + Nodes.SelectMany(x => x.ToString()) + ")"; }
-    }
-
-    public class BoldNode : Node
-    {
-        public IEnumerable<Node> Nodes { get; private set; }
-        public BoldNode(IEnumerable<Node> nodes) { Nodes = nodes; }
-        public override string ToString() { return "(BOLD: " + Nodes.SelectMany(x => x.ToString()) + ")"; }
-    }
-
-    public class BindingNode : Node
-    {
-        public string BindingExpression { get; private set; }
-        public BindingNode(string bindingExpression) { BindingExpression = bindingExpression; }
     }
 }

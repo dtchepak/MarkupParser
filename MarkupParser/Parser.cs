@@ -1,32 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MarkupParser
 {
     public class Parser<T>
     {
         private readonly Func<string, ParseResult<T>> _parse;
+        public Parser(Func<string, ParseResult<T>> parse) { _parse = parse; }
+        public ParseResult<T> Parse(string s) { return _parse(s); }
 
-        public Parser(Func<string, ParseResult<T>> parse)
-        {
-            _parse = parse;
-        }
-
-        public ParseResult<T> Parse(string s)
-        {
-            return _parse(s);
-        }
+        public static Parser<T> Fail() { return new Parser<T>(s => null); }
+        public static Parser<T> Value(T value) { return Parser.Value(value); }
 
         public Parser<T> Or(Parser<T> alternate)
         {
-            return new Parser<T>(s =>
-            {
-                var firstParse = Parse(s);
-                return firstParse ?? alternate.Parse(s);
-            });
+            return new Parser<T>(s => Parse(s) ?? alternate.Parse(s));
         }
 
-        public Parser<T1> Bind<T1>(Func<T, Parser<T1>> getNextParser)
+        public Parser<T1> Then<T1>(Func<T, Parser<T1>> getNextParser)
         {
             return new Parser<T1>(s =>
             {
@@ -37,45 +29,42 @@ namespace MarkupParser
             });
         }
 
-        public Parser<IEnumerable<T>> List()
+        public Parser<IEnumerable<T>> AtLeastOne()
         {
-            return new Parser<IEnumerable<T>>(ParseMultiple);
+            return this
+                .Then(x => Many()
+                .Then(xs => Parser.Value((new[] { x }).Concat(xs))));
         }
+
+        public Parser<IEnumerable<T>> Many() { return new Parser<IEnumerable<T>>(ParseMultiple); }
 
         private ParseResult<IEnumerable<T>> ParseMultiple(string input)
         {
             ParseResult<T> result;
             var remainingInput = input;
             var values = new List<T>();
-            while ((result = Parse(remainingInput)) != null)
+            while (remainingInput != "" && ((result = Parse(remainingInput)) != null))
             {
                 values.Add(result.Value);
                 remainingInput = result.Remaining;
             }
             return new ParseResult<IEnumerable<T>>(remainingInput, values);
         }
-
-        public static Parser<T> Fail()
-        {
-            return new Parser<T>(s => null);
-        }
-
-        public static Parser<T> Value(T value)
-        {
-            return new Parser<T>(s => new ParseResult<T>(s, value));
-        }
     }
 
     public class Parser
     {
+        public static Parser<T> Value<T>(T value)
+        {
+            return new Parser<T>(s => new ParseResult<T>(s, value));
+        }
         public static Parser<char> Char()
         {
             return new Parser<char>(s => string.IsNullOrEmpty(s) ? null : new ParseResult<char>(s.Substring(1), s[0]));
         }
-
         public static Parser<char> Satisfies(Func<char, bool> predicate)
         {
-            return Char().Bind(c => predicate(c) ? Parser<char>.Value(c) : Parser<char>.Fail());
+            return Char().Then(c => predicate(c) ? Value(c) : Parser<char>.Fail());
         }
     }
 }
