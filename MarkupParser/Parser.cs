@@ -23,7 +23,7 @@ namespace MarkupParser
             return new Parser<T1>(s =>
             {
                 var firstResult = Parse(s);
-                if (firstResult == null) return null;
+                if (firstResult == null) { return null; }
                 var nextParser = getNextParser(firstResult.Value);
                 return nextParser.Parse(firstResult.Remaining);
             });
@@ -36,7 +36,10 @@ namespace MarkupParser
                 .Then(xs => Parser.Value((new[] { x }).Concat(xs))));
         }
 
-        public Parser<IEnumerable<T>> Many() { return new Parser<IEnumerable<T>>(ParseMultiple); }
+        public Parser<IEnumerable<T>> Many() {
+            return AtLeastOne().Or(Parser<IEnumerable<T>>.Value(new T[0]));
+            //return new Parser<IEnumerable<T>>(ParseMultiple); 
+        }
 
         private ParseResult<IEnumerable<T>> ParseMultiple(string input)
         {
@@ -65,6 +68,19 @@ namespace MarkupParser
         public static Parser<char> Satisfies(Func<char, bool> predicate)
         {
             return Char().Then(c => predicate(c) ? Value(c) : Parser<char>.Fail());
+        }
+        public static Parser<char> Is(char c) { return Satisfies(c.Equals); }
+        public static Parser<char> IsNot(char c) { return Satisfies(parsed => c != parsed); }
+        public static Parser<string> DelimitedText(char delimiter)
+        {
+            return DelimitedText(delimiter, delimiter);
+        }
+        public static Parser<string> DelimitedText(char start, char end)
+        {
+            return Is(start)
+                .Then(startDelim => IsNot(end).Many()
+                    .Then(text => Is(end)
+                        .Then(endDelim => Value(new String(text.ToArray())))));
         }
     }
 }

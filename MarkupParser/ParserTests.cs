@@ -87,6 +87,38 @@ namespace MarkupParser
         }
 
         [Test]
+        public void DelimitedTextWithStartAndEndDelimiters()
+        {
+            var p = Parser.DelimitedText('<', '>');
+            var result = p.Parse("<hi> and other stuff");
+            result.Value.ShouldBe("hi");
+        }
+
+        [Test]
+        public void DelimitedTextWithSameStartAndEndDelimiter()
+        {
+            var p = Parser.DelimitedText('*');
+            var result = p.Parse("*hi* and other stuff");
+            result.Value.ShouldBe("hi");
+        }
+
+        [Test]
+        public void TryParseDelimitedTextFromUndelimitedInput()
+        {
+            var p = Parser.DelimitedText('*');
+            var result = p.Parse("asdf");
+            result.ShouldBe(null);
+        }
+
+        [Test]
+        public void TryParseDelimitedTextWithoutTerminatingDelimiter()
+        {
+            var p = Parser.DelimitedText('*');
+            var result = p.Parse("*a");
+            result.ShouldBe(null);
+        }
+
+        [Test]
         public void Bold()
         {
             var result = Node.BoldParser().Parse("*hello*");
@@ -106,9 +138,17 @@ namespace MarkupParser
         {
             const string expected = "hello (BOLD: world and (BINDING: binding))!";
 
-            //var result = Node.NodeParser().Many().Parse("hello *world and {binding}*!");
+            var result = Node.NodeParser().Many().Parse("hello *world and {binding}*!");
 
-            //Node.ToString(result.Value).ShouldBe(expected);
+            Node.ToString(result.Value).ShouldBe(expected);
+        }
+
+        [Test]
+        public void InvalidInput()
+        {
+            var result = Node.NodeParser().Many().Parse("this is *unterminated bold");
+
+            result.ShouldBe(null);
         }
     }
 }

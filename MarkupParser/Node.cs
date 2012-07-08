@@ -19,22 +19,6 @@ namespace MarkupParser
             return TextParser().Then(s => Parser<Node>.Value(new TextNode(s)));
         }
 
-        /*
-         doc := { expr }
-         expr := bold | text | binding
-         bold := * {expr} *
-         
-         samples:
-         "hello" = (text)
-         "hello *world*" = (text )(bold)
-         */
-
-        public static Parser<Node> RootNodeParser()
-        {
-            //NOT RIGHT: return NodeParser().Many().Then(nodes => Parser<Node>.Value(new RootNode(nodes)));
-            return null;
-        }
-
         public static Parser<Node> NodeParser()
         {
             return BoldParser().Or(BindingParser()).Or(TextNodeParser());
@@ -42,21 +26,14 @@ namespace MarkupParser
 
         public static Parser<Node> BoldParser()
         {
-            var boldSymbolParser = Parser.Satisfies('*'.Equals);
-            return boldSymbolParser
-                .Then(c => BindingParser().Or(TextNodeParser())
-                   .Then(nodes => boldSymbolParser
-                     .Then(c2 => Parser<Node>.Value(new BoldNode(nodes))
-                 ) ) );
+            var innerNodeParser = BindingParser().Or(TextNodeParser()).Many();
+            return Parser.DelimitedText('*')
+                .Then(innerText => Parser<Node>.Value(new BoldNode(innerNodeParser.Parse(innerText).Value)));
         }
 
         public static Parser<Node> BindingParser()
         {
-            return Parser.Satisfies('{'.Equals)
-                .Then(c => TextParser()
-                   .Then(text => Parser.Satisfies('}'.Equals)
-                     .Then(c2 => Parser<Node>.Value(new BindingNode(text))
-                 ) ) );
+            return Parser.DelimitedText('{', '}').Then(text => Parser<Node>.Value(new BindingNode(text)));
         }
 
         public static string ToString(IEnumerable<Node> nodes)
@@ -72,13 +49,6 @@ namespace MarkupParser
         public string Text { get; private set; }
         public override string ToString() { return Text; }
     }
-    public class RootNode : Node
-    {
-        public IEnumerable<Node> Nodes { get; private set; }
-        public RootNode(IEnumerable<Node> nodes) { Nodes = nodes; }
-        public override string ToString() { return "(ROOT: " + ToString(Nodes) + ")"; }
-    }
-
     public class BoldNode : Node
     {
         public IEnumerable<Node> Nodes { get; private set; }
