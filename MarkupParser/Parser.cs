@@ -81,7 +81,7 @@ namespace MarkupParser
         {
             return new Parser<string>(s =>
                                           {
-                                              var pattern = string.Format(@"^{0}([^{1}]*)?{1}?(.*)$", Regex.Escape(start+""), Regex.Escape(end + ""));
+                                              var pattern = string.Format(@"^{0}([^{1}]*)?{1}?(.*)$", Regex.Escape(start.ToString()), Regex.Escape(end.ToString()));
                                               var regex = new Regex(pattern);
                                               var match = regex.Match(s);
                                               var result = match.Groups[1].Value;
