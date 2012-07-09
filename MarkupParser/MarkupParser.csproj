@@ -45,7 +45,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ImperiParser.cs" />
+    <Compile Include="NodeFactory.cs" />
+    <Compile Include="Nodes\BindingTreeNode.cs" />
+    <Compile Include="Nodes\BoldTreeNode.cs" />
+    <Compile Include="Nodes\ItalicTreeNode.cs" />
+    <Compile Include="Nodes\TextTreeNode.cs" />
+    <Compile Include="TreeNode.cs" />
+    <Compile Include="TreeNodeFixture.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="ParserTests.cs" />
     <Compile Include="Parser.cs" />
