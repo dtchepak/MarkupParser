@@ -7,7 +7,6 @@ namespace MarkupParser
 {
     public class Parser<T>
     {
-        public string Name { get; set; }
         private readonly Func<string, ParseResult<T>> _parse;
         public Parser(Func<string, ParseResult<T>> parse) { _parse = parse; }
         public ParseResult<T> Parse(string s) { return _parse(s); }
@@ -62,7 +61,7 @@ namespace MarkupParser
     {
         public static Parser<T> Value<T>(T value)
         {
-            return new Parser<T>(s => new ParseResult<T>(s, value)) { Name = "Value parser: " + value};
+            return new Parser<T>(s => new ParseResult<T>(s, value));
         }
         public static Parser<char> Char()
         {
@@ -80,13 +79,9 @@ namespace MarkupParser
         }
         public static Parser<string> DelimitedText(char start, char end)
         {
-            //return Is(start)
-            //    .Then(startDelim => IsNot(end).Many()
-            //        .Then(text => Is(end)
-            //            .Then(endDelim => Value(new String(text.ToArray())))));
             return new Parser<string>(s =>
                                           {
-                                              var pattern = string.Format(@"^{0}([^{1}]*)?{1}?(.*)", Regex.Escape(start+""), Regex.Escape(end + ""));
+                                              var pattern = string.Format(@"^{0}([^{1}]*)?{1}?(.*)$", Regex.Escape(start+""), Regex.Escape(end + ""));
                                               var regex = new Regex(pattern);
                                               var match = regex.Match(s);
                                               var result = match.Groups[1].Value;

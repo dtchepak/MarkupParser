@@ -113,7 +113,8 @@ namespace MarkupParser
         {
             var p = Parser.DelimitedText('*');
             var result = p.Parse("*a");
-            result.Value.ShouldBe("(BOLD: a)");
+            result.Value.ShouldBe("a");
+            result.Remaining.ShouldBeEmpty();
         }
 
         [Test]

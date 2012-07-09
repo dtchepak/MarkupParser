@@ -27,15 +27,10 @@ namespace MarkupParser
         public static Parser<Node> BoldParser()
         {
             var bindingParser = BindingParser();
-            bindingParser.Name = "BindingParser";
             var textNodeParser = TextNodeParser();
-            textNodeParser.Name = "TextNodeParser";
             var innerNodeParser = bindingParser.Or(textNodeParser).Many();
-            textNodeParser.Name = "innernodeparser";
             var delimitedText = Parser.DelimitedText('*');
-            delimitedText.Name = "* delimited parser";
             var boldParser = delimitedText.Then(innerText => Parser<Node>.Value(new BoldNode(innerNodeParser.Parse(innerText).Value)));
-            boldParser.Name = "Bold Parser";
             return boldParser;
         }
 
