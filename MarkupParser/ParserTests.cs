@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using Shouldly;
 
@@ -112,9 +113,7 @@ namespace MarkupParser
         public void TryParseDelimitedTextWithoutTerminatingDelimiter()
         {
             var p = Parser.DelimitedText('*');
-            var result = p.Parse("*a");
-            result.Value.ShouldBe("a");
-            result.Remaining.ShouldBeEmpty();
+           Should.Throw<InvalidDataException>(() => p.Parse("*a"));
         }
 
         [Test]
@@ -145,9 +144,13 @@ namespace MarkupParser
         [Test]
         public void InvalidInput()
         {
-            var result = Node.NodeParser().Many().Parse("this is *unterminated bold");
+            Should.Throw<InvalidDataException>(() => Node.NodeParser().Many().Parse("this is *unterminated bold"));
+        }
 
-            Node.ToString(result.Value).ShouldBe("this is (BOLD: unterminated bold)");
+        [Test]
+        public void OtherInvalid()
+        {
+            Should.Throw<InvalidDataException>(() => Node.NodeParser().Many().Parse("this is *malformed _data*_"));
         }
 
         [Test]
