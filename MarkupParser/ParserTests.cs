@@ -35,7 +35,7 @@ namespace MarkupParser
             var parser = digitParser.Or(alphaStringParser);
             var result = parser.Parse("hello");
 
-            result.Remaining.ShouldBeEmpty();
+            result.Remaining.ShouldBe("ello");
             result.Value.ShouldBe('h');
         }
 
@@ -113,7 +113,7 @@ namespace MarkupParser
         {
             var p = Parser.DelimitedText('*');
             var result = p.Parse("*a");
-            result.ShouldBe(null);
+            result.Value.ShouldBe("(BOLD: a)");
         }
 
         [Test]
@@ -146,7 +146,7 @@ namespace MarkupParser
         {
             var result = Node.NodeParser().Many().Parse("this is *unterminated bold");
 
-            result.ShouldBe(null);
+            Node.ToString(result.Value).ShouldBe("this is (BOLD: unterminated bold)");
         }
     }
 }

@@ -86,11 +86,11 @@ namespace MarkupParser
             //            .Then(endDelim => Value(new String(text.ToArray())))));
             return new Parser<string>(s =>
                                           {
-                                              var regex = new Regex(@"^" + start + "([^\*]*)?\*?(.*)
-                                                  + start + "(.+?)" + end + "?(.+)");
-                                              var a = regex.Match(s);
-                                              var result = a.Groups[1].Value;
-                                              return String.IsNullOrEmpty(result) ? null : new ParseResult<string>(a.Groups[2].Value, result);
+                                              var pattern = string.Format(@"^{0}([^{1}]*)?{1}?(.*)", Regex.Escape(start+""), Regex.Escape(end + ""));
+                                              var regex = new Regex(pattern);
+                                              var match = regex.Match(s);
+                                              var result = match.Groups[1].Value;
+                                              return String.IsNullOrEmpty(result) ? null : new ParseResult<string>(match.Groups[2].Value, result);
                                           });
         }
     }
