@@ -1,10 +1,10 @@
 namespace MarkupParser.Nodes
 {
-    public class ItalicTreeNode : TreeNode
+    public class ItalicNode : CompositeNode
     {
-        public override Result Parse(char c)
+        public override ParseResult Parse(char c)
         {
-            return c == '_' ? Result.Closed : base.Parse(c);
+            return c == '_' ? ParseResult.Closed : base.Parse(c);
         }
 
         public override string ToString()

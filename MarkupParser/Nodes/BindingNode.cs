@@ -1,17 +1,17 @@
 namespace MarkupParser.Nodes
 {
-    public class BindingTreeNode : TreeNode
+    public class BindingNode : INode
     {
         private string Value { get; set; }
 
-        public override Result Parse(char c)
+        public ParseResult Parse(char c)
         {
             if (c == '}')
             {
-                return Result.Closed;
+                return ParseResult.Closed;
             }
             Value += c;
-            return Result.Continue;
+            return ParseResult.Continue;
         }
 
         public override string ToString()

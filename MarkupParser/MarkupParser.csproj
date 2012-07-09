@@ -45,12 +45,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NodeFactory.cs" />
-    <Compile Include="Nodes\BindingTreeNode.cs" />
-    <Compile Include="Nodes\BoldTreeNode.cs" />
-    <Compile Include="Nodes\ItalicTreeNode.cs" />
-    <Compile Include="Nodes\TextTreeNode.cs" />
-    <Compile Include="TreeNode.cs" />
+    <Compile Include="Nodes\BindingNode.cs" />
+    <Compile Include="Nodes\BoldNode.cs" />
+    <Compile Include="Nodes\CompositeNode.cs" />
+    <Compile Include="Nodes\INode.cs" />
+    <Compile Include="Nodes\ItalicNode.cs" />
+    <Compile Include="Nodes\NodeFactory.cs" />
+    <Compile Include="Nodes\ParseResult.cs" />
+    <Compile Include="Nodes\TextNode.cs" />
+    <Compile Include="Nodes\TreeParser.cs" />
     <Compile Include="TreeNodeFixture.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="ParserTests.cs" />

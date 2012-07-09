@@ -26,9 +26,17 @@ namespace MarkupParser
 
         public static Parser<Node> BoldParser()
         {
-            var innerNodeParser = BindingParser().Or(TextNodeParser()).Many();
-            return Parser.DelimitedText('*')
-                .Then(innerText => Parser<Node>.Value(new BoldNode(innerNodeParser.Parse(innerText).Value)));
+            var bindingParser = BindingParser();
+            bindingParser.Name = "BindingParser";
+            var textNodeParser = TextNodeParser();
+            textNodeParser.Name = "TextNodeParser";
+            var innerNodeParser = bindingParser.Or(textNodeParser).Many();
+            textNodeParser.Name = "innernodeparser";
+            var delimitedText = Parser.DelimitedText('*');
+            delimitedText.Name = "* delimited parser";
+            var boldParser = delimitedText.Then(innerText => Parser<Node>.Value(new BoldNode(innerNodeParser.Parse(innerText).Value)));
+            boldParser.Name = "Bold Parser";
+            return boldParser;
         }
 
         public static Parser<Node> BindingParser()
@@ -52,7 +60,10 @@ namespace MarkupParser
     public class BoldNode : Node
     {
         public IEnumerable<Node> Nodes { get; private set; }
-        public BoldNode(IEnumerable<Node> nodes) { Nodes = nodes; }
+        public BoldNode(IEnumerable<Node> nodes)
+        {
+            Nodes = nodes;
+        }
         public BoldNode(Node node) { Nodes = new[] { node }; }
         public override string ToString() { return "(BOLD: " + ToString(Nodes) + ")"; }
     }

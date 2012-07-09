@@ -18,25 +18,25 @@ namespace MarkupParser
         [Test]
         public void OrCombinatorWhenFirstParserSucceeds()
         {
-            var digitParser = Parser.Satisfies(char.IsDigit).AtLeastOne();
-            var alphaStringParser = Parser.Satisfies(char.IsLetter).AtLeastOne();
+            var digitParser = Parser.Satisfies(char.IsDigit);
+            var alphaStringParser = Parser.Satisfies(char.IsLetter);
             var parser = digitParser.Or(alphaStringParser);
             var result = parser.Parse("1hello");
 
             result.Remaining.ShouldBe("hello");
-            result.Value.ShouldBe("1");
+            result.Value.ShouldBe('1');
         }
 
         [Test]
         public void OrCombinatorWhenFirstParserFails()
         {
-            var digitParser = Parser.Satisfies(char.IsDigit).AtLeastOne();
-            var alphaStringParser = Parser.Satisfies(char.IsLetter).AtLeastOne();
+            var digitParser = Parser.Satisfies(char.IsDigit);
+            var alphaStringParser = Parser.Satisfies(char.IsLetter);
             var parser = digitParser.Or(alphaStringParser);
             var result = parser.Parse("hello");
 
             result.Remaining.ShouldBeEmpty();
-            result.Value.ShouldBe("hello");
+            result.Value.ShouldBe('h');
         }
 
         [Test]

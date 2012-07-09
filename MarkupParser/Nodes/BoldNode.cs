@@ -1,10 +1,10 @@
 namespace MarkupParser.Nodes
 {
-    public class BoldTreeNode : TreeNode
+    public class BoldNode : CompositeNode
     {
-        public override Result Parse(char c)
+        public override ParseResult Parse(char c)
         {
-            return c == '*' ? Result.Closed : base.Parse(c);
+            return c == '*' ? ParseResult.Closed : base.Parse(c);
         }
 
         public override string ToString()

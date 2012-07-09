@@ -1,8 +1,8 @@
 namespace MarkupParser.Nodes
 {
-    public class TextTreeNode : TreeNode
+    public class TextNode : INode
     {
-        public TextTreeNode(char c) { Value = c.ToString(); }
+        public TextNode(char c) { Value = c.ToString(); }
         public string Value { get; set; }
         public void Add(char c) { Value += c; }
         public override string ToString()
@@ -10,14 +10,14 @@ namespace MarkupParser.Nodes
             return "(TEXT: " + Value + ")";
         }
 
-        public override Result Parse(char c)
+        public ParseResult Parse(char c)
         {
             if (NodeFactory.CanCreateNodeFor(c))
             {
-                return Result.Failed;
+                return ParseResult.Failed;
             }
             Value += c;
-            return Result.Continue;
+            return ParseResult.Continue;
         }
     }
 }
