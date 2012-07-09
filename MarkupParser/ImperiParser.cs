@@ -41,13 +41,31 @@ namespace MarkupParser
             bold.Children().First().ToString().ShouldBe("(TEXT: world)");
         }
 
+        [Test]
+        public void BoldAndPlainText2()
+        {
+            var node = Parse("hi *world* 2");
+
+            node.Children().Count().ShouldBe(3);
+            var text = node.Children().First();
+            var bold = node.Children().Skip(1).First();
+            var text2 = node.Children().Skip(2).First();
+            text.ToString().ShouldBe("(TEXT: hi )");
+            bold.Children().Count().ShouldBe(1);
+            bold.Children().First().ToString().ShouldBe("(TEXT: world)");
+            text2.ToString().ShouldBe("(TEXT:  2)");
+        }
+
 
         public class TreeNode
         {
             private readonly List<TreeNode> _children = new List<TreeNode>();
             public TreeNode Parent { get; set; }
             public IEnumerable<TreeNode> Children() { return _children; }
-            public void Add(TreeNode node) { _children.Add(node); }
+            public void Add(TreeNode node) {
+                _children.Add(node);
+                node.Parent = this;
+            }
             public virtual bool IsEnd(char c) { return false; }
         }
 
@@ -65,31 +83,33 @@ namespace MarkupParser
             {
                 return "(TEXT: " + Value + ")";
             }
+
+            public override bool IsEnd(char c)
+            {
+                return Parent.IsEnd(c);
+            }
         }
 
         public TreeNode Parse(string s)
         {
             var root = new TreeNode();
-            var stack = new Stack<TreeNode>();
-            stack.Push(root);
+            var current = root;
             foreach (var c in s)
             {
-                var current = stack.Peek();
                 if (current.IsEnd(c))
                 {
-                    stack.Pop();
+                    current = current.Parent;
                 }
                 else if (IsStart(c))
                 {
                     if (current.GetType() == typeof(TextTreeNode))
                     {
-                        stack.Pop();
-                        current = stack.Peek();
+                        current = current.Parent;
                     }
                     //create node of that type
                     var boldTreeNode = new BoldTreeNode();
                     current.Add(boldTreeNode);
-                    stack.Push(boldTreeNode);
+                    current = boldTreeNode;
                 }
                 else
                 {
@@ -98,7 +118,7 @@ namespace MarkupParser
                         var textNode = new TextTreeNode();
                         textNode.Add(c);
                         current.Add(textNode);
-                        stack.Push(textNode);
+                        current = textNode;
                     }
                     else
                     {
