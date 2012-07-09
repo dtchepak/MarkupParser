@@ -20,7 +20,7 @@ namespace MarkupParser
         {
             var digitParser = Parser.Satisfies(char.IsDigit);
             var alphaStringParser = Parser.Satisfies(char.IsLetter);
-            var parser = digitParser.Or(alphaStringParser);
+            var parser = digitParser.Or(() => alphaStringParser);
             var result = parser.Parse("1hello");
 
             result.Remaining.ShouldBe("hello");
@@ -32,7 +32,7 @@ namespace MarkupParser
         {
             var digitParser = Parser.Satisfies(char.IsDigit);
             var alphaStringParser = Parser.Satisfies(char.IsLetter);
-            var parser = digitParser.Or(alphaStringParser);
+            var parser = digitParser.Or(() => alphaStringParser);
             var result = parser.Parse("hello");
 
             result.Remaining.ShouldBe("ello");
@@ -78,7 +78,7 @@ namespace MarkupParser
         [Test]
         public void BindingAndText()
         {
-            var parser = Node.BindingParser().Or(Node.TextNodeParser()).Many();
+            var parser = Node.BindingParser().Or(Node.TextNodeParser).Many();
             var result = parser.Parse("this {is} a test");
             Node.ToString(result.Value).ShouldBe("this (BINDING: is) a test");
             result.Value.Count().ShouldBe(3);
@@ -148,6 +148,23 @@ namespace MarkupParser
             var result = Node.NodeParser().Many().Parse("this is *unterminated bold");
 
             Node.ToString(result.Value).ShouldBe("this is (BOLD: unterminated bold)");
+        }
+
+        [Test]
+        public void Italics()
+        {
+            var result = Node.ItalicsParser().Parse("_a_");
+            result.Value.ToString().ShouldBe("(ITALICS: a)");
+        }
+
+        [Test]
+        public void AllTheThings()
+        {
+            const string expected = "hello (BOLD: world (ITALICS: and) (BINDING: binding)) and (ITALICS: italics)!";
+
+            var result = Node.NodeParser().Many().Parse("hello *world _and_ {binding}* and _italics_!");
+
+            Node.ToString(result.Value).ShouldBe(expected);
         }
     }
 }

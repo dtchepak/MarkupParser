@@ -11,7 +11,7 @@ namespace MarkupParser
             return Parser.Satisfies(IsNotReserved).Many().Then(cs => Parser.Value(String.Join("", cs)));
         }
 
-        private static bool IsReserved(char arg) { return "{}*".Any(arg.Equals); }
+        private static bool IsReserved(char arg) { return "{}*_".Any(arg.Equals); }
         private static bool IsNotReserved(char arg) { return !IsReserved(arg); }
 
         public static Parser<Node> TextNodeParser()
@@ -21,17 +21,12 @@ namespace MarkupParser
 
         public static Parser<Node> NodeParser()
         {
-            return BoldParser().Or(BindingParser()).Or(TextNodeParser());
+            return BoldParser().Or(ItalicsParser).Or(BindingParser).Or(TextNodeParser);
         }
 
         public static Parser<Node> BoldParser()
         {
-            var bindingParser = BindingParser();
-            var textNodeParser = TextNodeParser();
-            var innerNodeParser = bindingParser.Or(textNodeParser).Many();
-            var delimitedText = Parser.DelimitedText('*');
-            var boldParser = delimitedText.Then(innerText => Parser<Node>.Value(new BoldNode(innerNodeParser.Parse(innerText).Value)));
-            return boldParser;
+            return Parser.DelimitedText('*').Then(innerText => Parser<Node>.Value(new BoldNode(NodeParser().Many().Parse(innerText).Value)));
         }
 
         public static Parser<Node> BindingParser()
@@ -42,6 +37,11 @@ namespace MarkupParser
         public static string ToString(IEnumerable<Node> nodes)
         {
             return String.Join("", nodes);
+        }
+
+        public static Parser<Node> ItalicsParser()
+        {
+            return Parser.DelimitedText('_').Then(innerText => Parser<Node>.Value(new ItalicsNode(NodeParser().Many().Parse(innerText).Value)));
         }
     }
 
@@ -61,6 +61,16 @@ namespace MarkupParser
         }
         public BoldNode(Node node) { Nodes = new[] { node }; }
         public override string ToString() { return "(BOLD: " + ToString(Nodes) + ")"; }
+    }
+    public class ItalicsNode : Node
+    {
+        public IEnumerable<Node> Nodes { get; private set; }
+        public ItalicsNode(IEnumerable<Node> nodes)
+        {
+            Nodes = nodes;
+        }
+        public ItalicsNode(Node node) { Nodes = new[] { node }; }
+        public override string ToString() { return "(ITALICS: " + ToString(Nodes) + ")"; }
     }
 
     public class BindingNode : Node

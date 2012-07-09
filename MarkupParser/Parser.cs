@@ -14,9 +14,9 @@ namespace MarkupParser
         public static Parser<T> Fail() { return new Parser<T>(s => null); }
         public static Parser<T> Value(T value) { return Parser.Value(value); }
 
-        public Parser<T> Or(Parser<T> alternate)
+        public Parser<T> Or(Func<Parser<T>> alternate)
         {
-            return new Parser<T>(s => Parse(s) ?? alternate.Parse(s));
+            return new Parser<T>(s => Parse(s) ?? alternate().Parse(s));
         }
 
         public Parser<T1> Then<T1>(Func<T, Parser<T1>> getNextParser)
