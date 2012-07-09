@@ -11,7 +11,7 @@ namespace MarkupParser
         [Test]
         public void PlainText()
         {
-            var node = Parse("hello");
+            var node = TreeNode.Parse("hello");
 
             node.Children().Count().ShouldBe(1);
             node.Children().First().ToString().ShouldBe("(TEXT: hello)");
@@ -20,7 +20,7 @@ namespace MarkupParser
         [Test]
         public void BoldText()
         {
-            var node = Parse("*hi*");
+            var node = TreeNode.Parse("*hi*");
 
             node.Children().Count().ShouldBe(1);
             var bold = node.Children().First();
@@ -31,7 +31,7 @@ namespace MarkupParser
         [Test]
         public void BoldAndPlainText()
         {
-            var node = Parse("hi *world*");
+            var node = TreeNode.Parse("hi *world*");
 
             node.Children().Count().ShouldBe(2);
             var bold = node.Children().Skip(1).First();
@@ -44,7 +44,7 @@ namespace MarkupParser
         [Test]
         public void BoldAndPlainText2()
         {
-            var node = Parse("hi *world* 2");
+            var node = TreeNode.Parse("hi *world* 2");
 
             node.Children().Count().ShouldBe(3);
             var text = node.Children().First();
@@ -59,7 +59,7 @@ namespace MarkupParser
         [Test]
         public void Bindings()
         {
-            var node = Parse("{MyBinding}");
+            var node = TreeNode.Parse("{MyBinding}");
 
             node.Children().Count().ShouldBe(1);
             var binding = node.Children().First();
@@ -69,7 +69,7 @@ namespace MarkupParser
         [Test]
         public void PlainTextAndBindings()
         {
-            var node = Parse("Text {MyBinding}");
+            var node = TreeNode.Parse("Text {MyBinding}");
 
             node.Children().Count().ShouldBe(2);
             var text = node.Children().First();
@@ -83,7 +83,7 @@ namespace MarkupParser
         {
             const string expected = "(TEXT: hello )(BOLD: (TEXT: world and )(BINDING: binding))(TEXT: !)";
 
-            var result = Parse("hello *world and {binding}*!");
+            var result = TreeNode.Parse("hello *world and {binding}*!");
 
             result.ToString().ShouldBe(expected);
         }
@@ -91,127 +91,36 @@ namespace MarkupParser
         [Test]
         public void InvalidInput()
         {
-            var result = Parse("this is *unterminated bold");
+            var result = TreeNode.Parse("this is *unterminated bold");
 
             result.ToString().ShouldBe("(TEXT: this is )(BOLD: (TEXT: unterminated bold))");
         }
+    }
 
-
-        public class TreeNode
+    public class TreeNode
+    {
+        public enum Result
         {
-            public enum Result
-            {
-                Continue,
-                Failed,
-                Closed
-            }
-
-            private readonly List<TreeNode> _children = new List<TreeNode>();
-            private TreeNode _currentChild;
-            public TreeNode Parent { get; set; }
-            public IEnumerable<TreeNode> Children() { return _children; }
-            public void Add(TreeNode node)
-            {
-                _children.Add(node);
-                node.Parent = this;
-            }
-            public virtual bool IsEnd(char c) { return false; }
-
-            public virtual Result Parse(char c)
-            {
-                if (_currentChild == null)
-                {
-                    if (c == '*')
-                    {
-                        _currentChild = new BoldTreeNode();
-                        Add(_currentChild);
-                        return Result.Continue;
-                    }
-
-                    if (c == '{')
-                    {
-                        _currentChild = new BindingTreeNode();
-                        Add(_currentChild);
-                        return Result.Continue;
-                    }
-
-                    _currentChild = new TextTreeNode();
-                    Add(_currentChild);
-                }
-
-                var result = _currentChild.Parse(c);
-
-                if (result == Result.Closed)
-                {
-                    _currentChild = null;
-                    return Result.Continue;
-                }
-                if (result == Result.Failed)
-                {
-                    _currentChild = null;
-                    return Parse(c);
-                }
-                return result;
-            }
-            public override string ToString()
-            {
-                return string.Join("", Children().Select(x => x.ToString()));
-            }
+            Continue,
+            Failed,
+            Closed
         }
 
-        public class BoldTreeNode : TreeNode
+        private readonly List<TreeNode> _children = new List<TreeNode>();
+        private TreeNode _currentChild;
+        public TreeNode Parent { get; set; }
+        public IEnumerable<TreeNode> Children() { return _children; }
+        public void Add(TreeNode node)
         {
-            public override Result Parse(char c)
-            {
-                return c == '*' ? Result.Closed : base.Parse(c);
-            }
-
-            public override string ToString()
-            {
-                return "(BOLD: " + base.ToString() + ")";
-            }
+            _children.Add(node);
+            node.Parent = this;
+        }
+        public virtual char EndChar()
+        {
+            return '\0';
         }
 
-        public class BindingTreeNode : TextTreeNode
-        {
-            public override Result Parse(char c)
-            {
-                return c == '}' ? Result.Closed : base.Parse(c);
-            }
-
-            public override string ToString()
-            {
-                return "(BINDING: " + Value + ")";
-            }
-        }
-
-        public class TextTreeNode : TreeNode
-        {
-            public TextTreeNode() { Value = ""; }
-            public string Value { get; set; }
-            public void Add(char c) { Value += c; }
-            public override string ToString()
-            {
-                return "(TEXT: " + Value + ")";
-            }
-
-            public override bool IsEnd(char c)
-            {
-                return Parent.IsEnd(c);
-            }
-
-            public override Result Parse(char c)
-            {
-                if ((c == '*') || (c == '{'))
-                {
-                    return Result.Failed;
-                }
-                Value += c;
-                return Result.Continue;
-            }
-        }
-
-        public TreeNode Parse(string s)
+        public static TreeNode Parse(string s)
         {
             var root = new TreeNode();
 
@@ -223,9 +132,107 @@ namespace MarkupParser
             return root;
         }
 
-        private bool IsStart(char c)
+        public virtual Result Parse(char c)
         {
-            return c == '*';
+            if (_currentChild == null)
+            {
+                _currentChild = CreateChildNode(c);
+                Add(_currentChild);
+                return Result.Continue;
+            }
+
+            var result = _currentChild.Parse(c);
+
+            if (result == Result.Closed)
+            {
+                _currentChild = null;
+                return Result.Continue;
+            }
+            if (result == Result.Failed)
+            {
+                _currentChild = null;
+                return Parse(c);
+            }
+            return result;
+        }
+
+        private static TreeNode CreateChildNode(char c)
+        {
+            TreeNode node;
+            if (c == '*')
+            {
+                node = new BoldTreeNode();
+            }
+            else if (c == '{')
+            {
+                node = new BindingTreeNode();
+            }
+            else
+            {
+                node = new TextTreeNode(c);
+            }
+            return node;
+        }
+
+        public override string ToString()
+        {
+            return string.Join("", Children().Select(x => x.ToString()));
+        }
+    }
+
+    public class BoldTreeNode : TreeNode
+    {
+        public static char? StartTag = '*';
+
+        public override Result Parse(char c)
+        {
+            return c == '*' ? Result.Closed : base.Parse(c);
+        }
+
+        public override string ToString()
+        {
+            return "(BOLD: " + base.ToString() + ")";
+        }
+    }
+
+    public class BindingTreeNode : TreeNode
+    {
+        private string Value { get; set; }
+
+        public override Result Parse(char c)
+        {
+            if (c == '}')
+            {
+                return Result.Closed;
+            }
+            Value += c;
+            return Result.Continue;
+        }
+
+        public override string ToString()
+        {
+            return "(BINDING: " + Value + ")";
+        }
+    }
+
+    public class TextTreeNode : TreeNode
+    {
+        public TextTreeNode(char c) { Value = c.ToString(); }
+        public string Value { get; set; }
+        public void Add(char c) { Value += c; }
+        public override string ToString()
+        {
+            return "(TEXT: " + Value + ")";
+        }
+
+        public override Result Parse(char c)
+        {
+            if ((c == '*') || (c == '{'))
+            {
+                return Result.Failed;
+            }
+            Value += c;
+            return Result.Continue;
         }
     }
 }
