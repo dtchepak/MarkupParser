@@ -37,17 +37,18 @@ namespace MarkupParser
         }
 
         public Parser<IEnumerable<T>> Many() {
-            return AtLeastOne().Or(Parser<IEnumerable<T>>.Value(new T[0]));
-            //return new Parser<IEnumerable<T>>(ParseMultiple); 
+            //return AtLeastOne().Or(Parser<IEnumerable<T>>.Value(new T[0]));
+            return new Parser<IEnumerable<T>>(ParseMultiple); 
         }
 
         private ParseResult<IEnumerable<T>> ParseMultiple(string input)
         {
-            ParseResult<T> result;
             var remainingInput = input;
             var values = new List<T>();
-            while (remainingInput != "" && ((result = Parse(remainingInput)) != null))
+            while (remainingInput != "")
             {
+                var result = Parse(remainingInput);
+                if (result == null) break;
                 values.Add(result.Value);
                 remainingInput = result.Remaining;
             }
