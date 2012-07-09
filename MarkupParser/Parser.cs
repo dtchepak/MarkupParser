@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -37,9 +38,9 @@ namespace MarkupParser
                 .Then(xs => Parser.Value((new[] { x }).Concat(xs))));
         }
 
-        public Parser<IEnumerable<T>> Many() {
-            //return AtLeastOne().Or(Parser<IEnumerable<T>>.Value(new T[0]));
-            return new Parser<IEnumerable<T>>(ParseMultiple); 
+        public Parser<IEnumerable<T>> Many()
+        {
+            return new Parser<IEnumerable<T>>(ParseMultiple);
         }
 
         private ParseResult<IEnumerable<T>> ParseMultiple(string input)
@@ -80,13 +81,21 @@ namespace MarkupParser
         public static Parser<string> DelimitedText(char start, char end)
         {
             return new Parser<string>(s =>
-                                          {
-                                              var pattern = string.Format(@"^{0}([^{1}]*)?{1}?(.*)$", Regex.Escape(start.ToString()), Regex.Escape(end.ToString()));
-                                              var regex = new Regex(pattern);
-                                              var match = regex.Match(s);
-                                              var result = match.Groups[1].Value;
-                                              return String.IsNullOrEmpty(result) ? null : new ParseResult<string>(match.Groups[2].Value, result);
-                                          });
+            {
+                var pattern = string.Format(@"^{0}([^{1}]*)?({1}?)(.*)$", Regex.Escape(start.ToString()), Regex.Escape(end.ToString()));
+                var regex = new Regex(pattern);
+                var match = regex.Match(s);
+                var result = match.Groups[1].Value;
+                if (String.IsNullOrEmpty(result))
+                {
+                    return null;
+                }
+                if (match.Groups[2].Value != end.ToString())
+                {
+                    throw new InvalidDataException(s);
+                }
+                return new ParseResult<string>(match.Groups[3].Value, result);
+            });
         }
     }
 }
